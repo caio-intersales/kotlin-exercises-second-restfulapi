@@ -1,0 +1,17 @@
+package de.intersales.quickstep
+
+import javax.ws.rs.GET
+import javax.ws.rs.Path
+import javax.ws.rs.Produces
+import javax.ws.rs.core.MediaType
+
+@Path("/hello")
+class GreetingResource {
+// YAY!
+
+    // Viel Spaß beim Coden!
+    // Danke!
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    fun hello() = "Hello from Quarkus REST"
+}
