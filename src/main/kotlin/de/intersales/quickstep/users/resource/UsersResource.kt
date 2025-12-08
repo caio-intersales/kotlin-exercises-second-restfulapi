@@ -3,7 +3,7 @@ package de.intersales.quickstep.users.resource
 import de.intersales.quickstep.users.dto.CreateUserDto
 import de.intersales.quickstep.users.dto.UpdateUserDto
 import de.intersales.quickstep.users.dto.UsersDto
-import de.intersales.quickstep.users.exception.ElementNotFoundException
+import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.users.service.UsersService
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional
 import io.smallrye.mutiny.Uni
@@ -35,7 +35,7 @@ class UsersResource (
     @Path("/list")
     fun showAllUsers(): Uni<List<UsersDto>> {
         // Calls the function from Service that reads all users
-        return usersService.showAllUsers()
+        return usersService.findAllUsers()
     }
 
     /**

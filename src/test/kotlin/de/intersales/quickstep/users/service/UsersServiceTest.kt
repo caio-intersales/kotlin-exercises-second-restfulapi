@@ -5,7 +5,7 @@ import de.intersales.quickstep.users.dto.UpdateUserDto
 import de.intersales.quickstep.users.dto.UsersDto
 import de.intersales.quickstep.users.entity.UsersEntity
 import de.intersales.quickstep.users.exception.DuplicateUserException
-import de.intersales.quickstep.users.exception.ElementNotFoundException
+import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.users.mapper.UsersMapper
 import de.intersales.quickstep.users.repository.UsersRepository
 import io.quarkus.test.junit.QuarkusTest
@@ -51,7 +51,7 @@ class UsersServiceTest {
 
     @BeforeEach
     fun setup() {
-        // Reset mocks
+        // Reset mocks to assure stability
         reset(usersRepository, usersMapper)
 
         // Initialise service manually
@@ -141,7 +141,7 @@ class UsersServiceTest {
         mockWhen(mockQuery.list<UsersEntity>()).thenReturn(Uni.createFrom().item(entityList))
         mockWhen(usersMapper.entityToDto(userEntity)).thenReturn(userDto)
 
-        val subscriber = usersService.showAllUsers()
+        val subscriber = usersService.findAllUsers()
             .subscribe().withSubscriber(UniAssertSubscriber.create())
 
         subscriber.assertCompleted().assertItem(dtoList)

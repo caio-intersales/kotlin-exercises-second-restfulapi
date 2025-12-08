@@ -1,4 +1,4 @@
-package de.intersales.quickstep.users.exception
+package de.intersales.quickstep.exceptions
 
 class ElementNotFoundException(message: String) : RuntimeException(message) {
 }

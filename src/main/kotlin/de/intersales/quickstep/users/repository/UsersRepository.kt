@@ -5,21 +5,17 @@ import io.quarkus.hibernate.reactive.panache.PanacheQuery
 import io.quarkus.hibernate.reactive.panache.PanacheRepository
 import io.quarkus.panache.common.Parameters
 import io.smallrye.mutiny.Uni
-import org.jboss.logging.Logger
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class UsersRepository : PanacheRepository<UsersEntity>{
-    private val logger = Logger.getLogger(javaClass.name)
     /**
      * Function: findByEmail
      * What does it do: Allows for searching for users by their email address (which should be unique)
      */
     fun findByEmail(email: String): Uni<UsersEntity?>{
-logger.info("Start looking for user by email: $email")
         return find("emailaddress = :email", Parameters.with("email", email))
-            .list<UsersEntity>()
-            .onItem().transform { it.firstOrNull() }
+            .firstResult<UsersEntity>()
     }
 
     /**

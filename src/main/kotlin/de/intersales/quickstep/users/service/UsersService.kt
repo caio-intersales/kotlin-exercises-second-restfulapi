@@ -5,13 +5,12 @@ import de.intersales.quickstep.users.dto.UpdateUserDto
 import de.intersales.quickstep.users.dto.UsersDto
 import de.intersales.quickstep.users.entity.UsersEntity
 import de.intersales.quickstep.users.exception.DuplicateUserException
-import de.intersales.quickstep.users.exception.ElementNotFoundException
+import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.users.mapper.UsersMapper
 import de.intersales.quickstep.users.repository.UsersRepository
 import de.intersales.quickstep.util.sha256Hash
 import io.quarkus.hibernate.reactive.panache.PanacheQuery
 import io.smallrye.mutiny.Uni
-import org.jboss.logging.Logger
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
@@ -19,8 +18,6 @@ class UsersService(
     private val usersRepository: UsersRepository,
     private val usersMapper: UsersMapper
     ) {
-
-    private val logger = Logger.getLogger(javaClass.name)
 
     /**
      * Function: createNewUser
@@ -40,7 +37,6 @@ class UsersService(
                             DuplicateUserException("The email address '${dto.email}' is already in use.")
                         )
                     }
-                logger.info("No existing user found")
 
                 // If no user is found, then continue to add the user to the database
 
@@ -66,10 +62,10 @@ class UsersService(
 
     /**
      * Function: findAllUsers
-     * What does it do: the function reads all users from the database and return them, transforming Entity data into DTO
+     * What does it do: the function reads all users from the database and returns them, transforming Entity data into DTO
      */
 
-    fun showAllUsers(): Uni<List<UsersDto>> {
+    fun findAllUsers(): Uni<List<UsersDto>> {
         // 1. Get the PanacheQuery object from the repository
         val query: PanacheQuery<UsersEntity> = usersRepository.showAllUsers()
 
@@ -89,12 +85,9 @@ class UsersService(
 
     fun findOneUser(id: Long): Uni<UsersDto> {
         return usersRepository.findUserById(id)
-            .onItem().ifNotNull().transform { entity ->
-                usersMapper.entityToDto(entity)
-            }
-            .onItem().ifNull().failWith {
-                ElementNotFoundException("The user with ID $id was not found.")
-            }
+            .onItem().ifNull()
+            .failWith { ElementNotFoundException("The user with ID $id was not found.") }
+            .map(usersMapper::entityToDto)
     }
 
     /**

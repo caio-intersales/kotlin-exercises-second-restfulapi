@@ -3,7 +3,7 @@ package de.intersales.quickstep.users.resource
 import de.intersales.quickstep.users.dto.CreateUserDto
 import de.intersales.quickstep.users.dto.UpdateUserDto
 import de.intersales.quickstep.users.dto.UsersDto
-import de.intersales.quickstep.users.exception.ElementNotFoundException
+import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.users.service.UsersService
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.junit.mockito.InjectMock
@@ -54,7 +54,7 @@ class UsersResourceTest {
     @Test
     fun `showAllUsers should return 200 OK with a list of users`() {
         // Mock service to return a list of DTOs
-        mockWhen(usersService.showAllUsers()).thenReturn(Uni.createFrom().item(listOf(USER_DTO)))
+        mockWhen(usersService.findAllUsers()).thenReturn(Uni.createFrom().item(listOf(USER_DTO)))
 
         // Act & Assert
         given()
