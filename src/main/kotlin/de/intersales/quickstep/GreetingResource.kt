@@ -7,10 +7,6 @@ import javax.ws.rs.core.MediaType
 
 @Path("/hello")
 class GreetingResource {
-// YAY!
-
-    // Viel Spaß beim Coden!
-    // Danke!
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     fun hello() = "Hello from Quarkus REST"

@@ -5,16 +5,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.intersales.quickstep</groupId>
-    <artifactId>qwm</artifactId>
+    <artifactId>user_api</artifactId>
     <version>${revision}</version>
     <properties>
-        <revision>2.6.3-SNAPSHOT</revision>
+        <revision>1.0.0-SNAPSHOT</revision>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
         <exec.maven.plugin.version>1.6.0</exec.maven.plugin.version>
         <groovy.major.version>4.0</groovy.major.version>
         <groovy.patch.version>11</groovy.patch.version>
         <groovy.version>3.0.9</groovy.version>
-        <kotlin.version>1.9.25</kotlin.version>
+        <kotlin.version>1.7.22</kotlin.version>
         <maven.compiler.release>17</maven.compiler.release>
         <org.mapstruct.version>1.5.3.Final</org.mapstruct.version>
         <pdfbox.version>3.0.4</pdfbox.version>
