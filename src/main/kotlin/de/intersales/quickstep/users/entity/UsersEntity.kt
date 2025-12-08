@@ -20,6 +20,25 @@ class UsersEntity : PanacheEntityBase() {
     @Column(name = "id")
     var id: Long? = null
 
+    // --- Override for tests
+    override fun equals(other: Any?): Boolean {
+        if(this === other) return true
+        if(javaClass != other?.javaClass) return false
+
+        other as UsersEntity
+
+        // If the ID is null (meaning it's a new entity), then an entity is only equal to itself (not others)
+        return id != null && id == other.id
+    }
+
+    override fun hashCode(): Int {
+        // If the ID is not null (test) use its hash code
+        // If it is a new entity, then use a fixed constant
+        return id?.hashCode() ?: 31
+    }
+    // --- End of overrides
+
+
     @Column(name = "firstname")
     var firstName: String?      = null
 
