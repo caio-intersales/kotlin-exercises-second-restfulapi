@@ -10,7 +10,7 @@ import java.time.OffsetDateTime
 
 data class OrdersDto (
     val id: Long?,
-    var orderOwner: UsersDto,
+    var orderOwner: UsersDto?,
     var orderProducts: List<ProductsDto>,
     val issueDate: OffsetDateTime
 )

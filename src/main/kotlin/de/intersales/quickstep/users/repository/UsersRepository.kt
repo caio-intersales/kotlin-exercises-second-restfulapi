@@ -32,7 +32,14 @@ class UsersRepository : PanacheRepository<UsersEntity>{
      */
     fun findUserById(id: Long): Uni<UsersEntity?> {
         return find("id = :id", Parameters.with("id", id)).singleResult()
+    }
 
+    /**
+     * Function: findListOfUsers
+     * What does it do: Allows for searching for many users based on their IDs
+     */
+    fun findListOfUsers(ids: Collection<Long?>): Uni<List<UsersEntity>> {
+        return list("id in :ids", Parameters.with("ids", ids))
     }
 
     /**

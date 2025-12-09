@@ -11,6 +11,10 @@ import de.intersales.quickstep.products.dto.ProductsDto
 import de.intersales.quickstep.products.entity.ProductsEntity
 import de.intersales.quickstep.products.mapper.ProductsMapper
 import de.intersales.quickstep.products.repository.ProductsRepository
+import de.intersales.quickstep.users.dto.UsersDto
+import de.intersales.quickstep.users.entity.UsersEntity
+import de.intersales.quickstep.users.mapper.UsersMapper
+import de.intersales.quickstep.users.repository.UsersRepository
 import io.quarkus.hibernate.reactive.panache.PanacheQuery
 import io.smallrye.mutiny.Uni
 import java.time.OffsetDateTime
@@ -21,7 +25,9 @@ class OrdersService (
     private val ordersRepository: OrdersRepository,
     private val ordersMapper: OrdersMapper,
     private val productsRepository: ProductsRepository,
-    private val productsMapper: ProductsMapper
+    private val productsMapper: ProductsMapper,
+    private val usersRepository: UsersRepository,
+    private val usersMapper: UsersMapper
     ) {
 
     /**
@@ -48,28 +54,45 @@ class OrdersService (
 
         return query.list<OrdersEntity>()
             .flatMap { entityList: List<OrdersEntity> -> // This returns a list of orders
-                // 1. Product IDs are collected here
+                // 1. Start fetching the needed information to be retrieved from the db
                 val allProductIds: Set<Long> = entityList
                     .flatMap { it.orderProducts }
                     .toSet() // Ensure we only query for each ID once
 
-                // 2. Call the database to fetch ProductsEntities
-                // This will return a full list of products
-                productsRepository.findListOfProducts(allProductIds)
-                    .onItem().transform { productsList: List<ProductsEntity> ->
-                        // 3. Create a map for fast lookup
-                        // productsMap: Map<Long, ProductsDto>
+                val allOwnersIds: Set<Long?> = entityList
+                    .map { it.orderOwner }
+                    .toSet()
+
+                // 2. Fetch information concurrently
+                val productsUni: Uni<List<ProductsEntity>> = productsRepository.findListOfProducts(allProductIds)
+                val ownersUni: Uni<List<UsersEntity>> = usersRepository.findListOfUsers(allOwnersIds)
+
+                // 3. Wait for both lists to be ready
+                return@flatMap Uni.combine().all().unis(productsUni, ownersUni).asTuple()
+                    .onItem().transform { tuple ->
+                        val productsList = tuple.item1
+                        val ownersList = tuple.item2
+
+                        // 4. Create lookup maps
                         val productsMap: Map<Long, ProductsDto> = productsList
-                            .associateBy { it.id!! } // This creates a map where key=ID, value=Entity
-                            .mapValues { (_, entity) -> productsMapper.entityToDto(entity) } // Map to DTOs
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> productsMapper.entityToDto(entity) }
+                        val ownersMap: Map<Long, UsersDto> = ownersList
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> usersMapper.entityToDto(entity) }
 
-                        // 4. Map the OrdersEntity list to OrdersDto list
+                        // 5. Map the OrdersEntity list to OrdersDto list
                         entityList.map { orderEntity ->
-                            val orderDto = ordersMapper.entityToDto(orderEntity) // This maps each order
-                            val productDtos = orderEntity.orderProducts // This finds and sets the corresponding product DTO
-                                .mapNotNull { productId -> productsMap[productId] }
+                            val orderDto = ordersMapper.entityToDto(orderEntity)
 
+                            // Set products
+                            val productDtos = orderEntity.orderProducts
+                                .mapNotNull { productId -> productsMap[productId] }
                             orderDto.orderProducts = productDtos
+
+                            // Set owner
+                            val ownerDto = ownersMap[orderEntity.orderOwner]
+                            orderDto.orderOwner = ownerDto
 
                             orderDto
                         }
@@ -85,31 +108,47 @@ class OrdersService (
         return ordersRepository.findById(id)
             .flatMap { orderEntity: OrdersEntity? ->
                 // Handle the case in which the order doesn't exist
-                if(orderEntity == null){
+                if (orderEntity == null) {
                     return@flatMap Uni.createFrom().nullItem()
                 }
 
-                // Gather all product IDs
-                val allProductsIds: Set<Long> = orderEntity
-                    .orderProducts
-                    .toSet()
+                // Gather product IDs
+                val allProductsIds: Set<Long> = orderEntity.orderProducts.toSet()
 
-                // Look for Product entities
-                productsRepository.findListOfProducts(allProductsIds)
-                    .onItem().transform { productsList: List<ProductsEntity> ->
-                        // Create a map
+                // Owner ID
+                val ownerId: Long? = orderEntity.orderOwner
+
+                // Fetch entities concurrently
+                val productsUni: Uni<List<ProductsEntity>> =
+                    productsRepository.findListOfProducts(allProductsIds)
+
+                val ownerUni: Uni<List<UsersEntity>> =
+                    usersRepository.findListOfUsers(setOf(ownerId))
+
+                return@flatMap Uni.combine().all().unis(productsUni, ownerUni).asTuple()
+                    .onItem().transform { tuple ->
+                        val productsList = tuple.item1
+                        val ownersList = tuple.item2
+
+                        // Build lookup maps
                         val productsMap: Map<Long, ProductsDto> = productsList
                             .associateBy { it.id!! }
-                            .mapValues { (_, entity) -> productsMapper
-                                .entityToDto(entity) }
+                            .mapValues { (_, entity) -> productsMapper.entityToDto(entity) }
 
-                        // Map the OrdersEntity to the single enriched OrdersDto
+                        val ownersMap: Map<Long, UsersDto> = ownersList
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> usersMapper.entityToDto(entity) }
+
+                        // Build the final DTO
                         val orderDto = ordersMapper.entityToDto(orderEntity)
 
+                        // Set products
                         val productDtos = orderEntity.orderProducts
                             .mapNotNull { productId -> productsMap[productId] }
-
                         orderDto.orderProducts = productDtos
+
+                        // Set owner (may be null)
+                        orderDto.orderOwner = ownersMap[ownerId]
 
                         orderDto
                     }
@@ -125,29 +164,53 @@ class OrdersService (
 
         return ordersRepository.findByOwner(orderOwner)
             .flatMap { entityList: List<OrdersEntity> ->
+
+                if (entityList.isEmpty()) {
+                    return@flatMap Uni.createFrom().item(emptyList<OrdersDto>())
+                }
+
                 // Gather all Product IDs
                 val allProductsIds: Set<Long> = entityList
                     .flatMap { it.orderProducts }
                     .toSet()
 
-                // Look for Product entities
-                productsRepository.findListOfProducts(allProductsIds)
-                    .onItem().transform { productsList: List<ProductsEntity> ->
-                        // Create a map
+                // Owners: all returned orders share the same owner → but we support flexibility
+                val allOwnersIds: Set<Long?> = entityList
+                    .map { it.orderOwner }
+                    .toSet()
+
+                // Fetch entities concurrently
+                val productsUni = productsRepository.findListOfProducts(allProductsIds)
+                val ownersUni = usersRepository.findListOfUsers(allOwnersIds)
+
+                Uni.combine().all().unis(productsUni, ownersUni).asTuple()
+                    .onItem().transform { tuple ->
+
+                        val productsList = tuple.item1
+                        val ownersList = tuple.item2
+
+                        // Create lookup maps
                         val productsMap: Map<Long, ProductsDto> = productsList
                             .associateBy { it.id!! }
                             .mapValues { (_, entity) -> productsMapper.entityToDto(entity) }
 
-                        // Map the OrdersEntity to the enriched OrdersDto list
+                        val ownersMap: Map<Long, UsersDto> = ownersList
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> usersMapper.entityToDto(entity) }
+
+                        // Map to enriched DTOs
                         entityList.map { orderEntity ->
-                            // Map the order
+
                             val orderDto = ordersMapper.entityToDto(orderEntity)
 
-                            // Find the corresponding product DTOs
+                            // Set product DTO list
                             val productDtos = orderEntity.orderProducts
                                 .mapNotNull { productId -> productsMap[productId] }
-
                             orderDto.orderProducts = productDtos
+
+                            // Set owner DTO
+                            orderDto.orderOwner = ownersMap[orderEntity.orderOwner]
+
                             orderDto
                         }
                     }
@@ -159,31 +222,57 @@ class OrdersService (
      * What does it do: it looks for all orders issued either before, after, or between given dates
      */
     fun findOrdersByDate(startDate: OffsetDateTime?, endDate: OffsetDateTime?): Uni<List<OrdersDto>> {
+
         return ordersRepository.findByDates(startDate, endDate)
             .flatMap { entityList: List<OrdersEntity> ->
-                // Gather all Product IDs
+
+                if (entityList.isEmpty()) {
+                    return@flatMap Uni.createFrom().item(emptyList<OrdersDto>())
+                }
+
+                // 1. Gather all Product IDs
                 val allProductsIds: Set<Long> = entityList
                     .flatMap { it.orderProducts }
                     .toSet()
 
-                // Look for entities
-                productsRepository.findListOfProducts(allProductsIds)
-                    .onItem().transform { productsList: List<ProductsEntity> ->
-                        // Create a map
+                // 2. Gather all Owner IDs
+                val allOwnersIds: Set<Long?> = entityList
+                    .map { it.orderOwner }
+                    .toSet()
+
+                // 3. Fetch concurrently
+                val productsUni = productsRepository.findListOfProducts(allProductsIds)
+                val ownersUni = usersRepository.findListOfUsers(allOwnersIds)
+
+                Uni.combine().all().unis(productsUni, ownersUni).asTuple()
+                    .onItem().transform { tuple ->
+
+                        val productsList = tuple.item1
+                        val ownersList = tuple.item2
+
+                        // Create product lookup map
                         val productsMap: Map<Long, ProductsDto> = productsList
                             .associateBy { it.id!! }
                             .mapValues { (_, entity) -> productsMapper.entityToDto(entity) }
 
-                        // Map the OrdersEntity to the enriched OrdersDto list
+                        // Create owner lookup map
+                        val ownersMap: Map<Long, UsersDto> = ownersList
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> usersMapper.entityToDto(entity) }
+
+                        // Map to enriched OrdersDto
                         entityList.map { orderEntity ->
-                            // Map the order
+
                             val orderDto = ordersMapper.entityToDto(orderEntity)
 
-                            // Find the corresponding product DTOs
+                            // Set products
                             val productDtos = orderEntity.orderProducts
                                 .mapNotNull { productId -> productsMap[productId] }
-
                             orderDto.orderProducts = productDtos
+
+                            // Set owner
+                            orderDto.orderOwner = ownersMap[orderEntity.orderOwner]
+
                             orderDto
                         }
                     }
@@ -195,31 +284,57 @@ class OrdersService (
      * What does it do: it looks for all orders issued either before, after, or between given dates belonging to one owner
      */
     fun findOrdersByDateAndOwner(orderOwner: Long, startDate: OffsetDateTime?, endDate: OffsetDateTime?): Uni<List<OrdersDto>> {
+
         return ordersRepository.findByDatesAndOwner(orderOwner, startDate, endDate)
             .flatMap { entityList: List<OrdersEntity> ->
-                // Gather all Product IDs
+
+                if (entityList.isEmpty()) {
+                    return@flatMap Uni.createFrom().item(emptyList<OrdersDto>())
+                }
+
+                // 1. Gather product IDs
                 val allProductsIds: Set<Long> = entityList
                     .flatMap { it.orderProducts }
                     .toSet()
 
-                // Look for entities
-                productsRepository.findListOfProducts(allProductsIds)
-                    .onItem().transform { productsList: List<ProductsEntity> ->
-                        // Create a map
+                // 2. Gather owner IDs (normally only one)
+                val allOwnersIds: Set<Long?> = entityList
+                    .map { it.orderOwner }
+                    .toSet()
+
+                // 3. Fetch concurrently
+                val productsUni = productsRepository.findListOfProducts(allProductsIds)
+                val ownersUni = usersRepository.findListOfUsers(allOwnersIds)
+
+                Uni.combine().all().unis(productsUni, ownersUni).asTuple()
+                    .onItem().transform { tuple ->
+
+                        val productsList = tuple.item1
+                        val ownersList = tuple.item2
+
+                        // Product map
                         val productsMap: Map<Long, ProductsDto> = productsList
                             .associateBy { it.id!! }
                             .mapValues { (_, entity) -> productsMapper.entityToDto(entity) }
 
-                        // Map the OrdersEntity to the enriched OrdersDto list
+                        // Owner map
+                        val ownersMap: Map<Long, UsersDto> = ownersList
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> usersMapper.entityToDto(entity) }
+
+                        // Build enriched DTO list
                         entityList.map { orderEntity ->
-                            // Map the order
+
                             val orderDto = ordersMapper.entityToDto(orderEntity)
 
-                            // Find the corresponding product DTOs
+                            // Set products
                             val productDtos = orderEntity.orderProducts
                                 .mapNotNull { productId -> productsMap[productId] }
-
                             orderDto.orderProducts = productDtos
+
+                            // Set owner
+                            orderDto.orderOwner = ownersMap[orderEntity.orderOwner]
+
                             orderDto
                         }
                     }

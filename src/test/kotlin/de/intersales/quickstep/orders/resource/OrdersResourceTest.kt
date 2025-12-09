@@ -5,6 +5,7 @@ import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
 import de.intersales.quickstep.orders.dto.UpdateOrderDto
 import de.intersales.quickstep.orders.service.OrdersService
+import de.intersales.quickstep.users.dto.UsersDto
 import io.smallrye.mutiny.Uni
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -25,13 +26,25 @@ class OrdersResourceTest {
         ordersResource = OrdersResource(ordersService)
     }
 
+    val mockOwnerDto = UsersDto(
+        id = 1L,
+        firstName = "Test",
+        lastName = "Owner",
+        email = "test@example.com",
+        deliveryAddress = "123 Test St"
+    )
+
+    val mockOwnerDto2 = mockOwnerDto.copy(
+        id = 2L
+    )
+
     // ─────────────────────────────────────────────
     // @GET /list
     // ─────────────────────────────────────────────
     @Test
     fun `showAllOrders should return list of OrdersDto`() {
-        val orderDto1 = OrdersDto(1L, 1L, emptyList(), OffsetDateTime.now())
-        val orderDto2 = OrdersDto(2L, 2L, emptyList(), OffsetDateTime.now())
+        val orderDto1 = OrdersDto(1L, mockOwnerDto, emptyList(), OffsetDateTime.now())
+        val orderDto2 = OrdersDto(2L, mockOwnerDto2, emptyList(), OffsetDateTime.now())
         `when`(ordersService.findAllOrders()).thenReturn(Uni.createFrom().item(listOf(orderDto1, orderDto2)))
 
         val result = ordersResource.showAllOrders().await().indefinitely()
@@ -47,7 +60,7 @@ class OrdersResourceTest {
     // ─────────────────────────────────────────────
     @Test
     fun `showSpecificOrder should return specific order`() {
-        val orderDto = OrdersDto(1L, 1L, emptyList(), OffsetDateTime.now())
+        val orderDto = OrdersDto(1L, mockOwnerDto, emptyList(), OffsetDateTime.now())
         `when`(ordersService.findOneOrder(1L)).thenReturn(Uni.createFrom().item(orderDto))
 
         val result = ordersResource.showSpecificOrder(1L).await().indefinitely()
@@ -62,7 +75,7 @@ class OrdersResourceTest {
     @Test
     fun `addNewOrder should return created response`() {
         val createDto = CreateOrderDto(orderOwner = 1L, orderProducts = listOf(10L, 20L))
-        val createdDto = OrdersDto(5L, 1L, emptyList(), OffsetDateTime.now())
+        val createdDto = OrdersDto(5L, mockOwnerDto, emptyList(), OffsetDateTime.now())
         `when`(ordersService.createNewOrder(createDto)).thenReturn(Uni.createFrom().item(createdDto))
 
         val response: Response = ordersResource.addNewOrder(createDto).await().indefinitely()
@@ -79,7 +92,7 @@ class OrdersResourceTest {
     @Test
     fun `updateExistingOrder should return updated order`() {
         val updateDto = UpdateOrderDto(1L, 1L, listOf(10L, 20L))
-        val updatedOrder = OrdersDto(1L, 1L, emptyList(), OffsetDateTime.now())
+        val updatedOrder = OrdersDto(1L, mockOwnerDto, emptyList(), OffsetDateTime.now())
         `when`(ordersService.updateOneOrder(updateDto)).thenReturn(Uni.createFrom().item(updatedOrder))
 
         val result = ordersResource.updateExistingOrder(updateDto).await().indefinitely()

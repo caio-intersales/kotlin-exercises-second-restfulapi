@@ -38,7 +38,7 @@ class OrdersMapper {
 
         return OrdersDto(
             id = entity.id,
-            orderOwner = entity.orderOwner ?: 0L,
+            orderOwner = null,
             orderProducts = emptyList<ProductsDto>(),
             issueDate = entity.issueDate
         )

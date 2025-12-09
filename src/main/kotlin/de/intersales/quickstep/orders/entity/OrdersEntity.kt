@@ -9,6 +9,7 @@ import javax.persistence.GenerationType
 import javax.persistence.Id
 import javax.persistence.Table
 import com.fasterxml.jackson.core.type.TypeReference
+import de.intersales.quickstep.users.dto.UsersDto
 import java.time.OffsetDateTime
 
 /**
