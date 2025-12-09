@@ -4,6 +4,7 @@ import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
 import de.intersales.quickstep.orders.dto.UpdateOrderDto
 import de.intersales.quickstep.orders.entity.OrdersEntity
+import de.intersales.quickstep.products.dto.ProductsDto
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
@@ -38,7 +39,7 @@ class OrdersMapper {
         return OrdersDto(
             id = entity.id,
             orderOwner = entity.orderOwner ?: 0L,
-            orderProducts = entity.orderProductsJson,
+            orderProducts = emptyList<ProductsDto>(),
             issueDate = entity.issueDate
         )
     }

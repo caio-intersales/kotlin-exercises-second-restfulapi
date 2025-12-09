@@ -1,5 +1,6 @@
 package de.intersales.quickstep.orders.dto
 
+import de.intersales.quickstep.products.dto.ProductsDto
 import java.time.OffsetDateTime
 
 /**
@@ -9,6 +10,6 @@ import java.time.OffsetDateTime
 data class OrdersDto (
     val id: Long?,
     val orderOwner: Long?,
-    val orderProducts: String,
+    var orderProducts: List<ProductsDto>,
     val issueDate: OffsetDateTime
 )
