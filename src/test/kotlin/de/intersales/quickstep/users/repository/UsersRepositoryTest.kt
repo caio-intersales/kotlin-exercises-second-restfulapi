@@ -20,7 +20,7 @@ class UsersRepositoryTest {
     lateinit var repository: UsersRepository
 
     // Function to create and persist entity
-    fun setupUser(email: String, id: Long? = null): Uni<UsersEntity> {
+    fun setupUser(email: String): Uni<UsersEntity> {
         val user = UsersEntity().apply {
             this.firstName = "Test"
             this.lastName = "User"

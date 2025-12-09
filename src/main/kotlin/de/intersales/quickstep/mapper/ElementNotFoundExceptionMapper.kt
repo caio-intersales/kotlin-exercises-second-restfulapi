@@ -1,4 +1,4 @@
-package de.intersales.quickstep.users.mapper
+package de.intersales.quickstep.mapper
 
 import de.intersales.quickstep.exceptions.ElementNotFoundException
 import javax.ws.rs.core.Response
