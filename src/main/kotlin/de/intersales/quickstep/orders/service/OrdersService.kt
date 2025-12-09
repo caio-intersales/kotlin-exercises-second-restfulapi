@@ -1,7 +1,9 @@
 package de.intersales.quickstep.orders.service
 
+import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
+import de.intersales.quickstep.orders.dto.UpdateOrderDto
 import de.intersales.quickstep.orders.entity.OrdersEntity
 import de.intersales.quickstep.orders.mapper.OrdersMapper
 import de.intersales.quickstep.orders.repository.OrdersRepository
@@ -76,6 +78,45 @@ class OrdersService (
     }
 
     /**
+     * Function: findOneOrder
+     * What does it do: The function returns a specific order based on a provided ID
+     */
+    fun findOneOrder(id: Long): Uni<OrdersDto> {
+        return ordersRepository.findById(id)
+            .flatMap { orderEntity: OrdersEntity? ->
+                // Handle the case in which the order doesn't exist
+                if(orderEntity == null){
+                    return@flatMap Uni.createFrom().nullItem()
+                }
+
+                // Gather all product IDs
+                val allProductsIds: Set<Long> = orderEntity
+                    .orderProducts
+                    .toSet()
+
+                // Look for Product entities
+                productsRepository.findListOfProducts(allProductsIds)
+                    .onItem().transform { productsList: List<ProductsEntity> ->
+                        // Create a map
+                        val productsMap: Map<Long, ProductsDto> = productsList
+                            .associateBy { it.id!! }
+                            .mapValues { (_, entity) -> productsMapper
+                                .entityToDto(entity) }
+
+                        // Map the OrdersEntity to the single enriched OrdersDto
+                        val orderDto = ordersMapper.entityToDto(orderEntity)
+
+                        val productDtos = orderEntity.orderProducts
+                            .mapNotNull { productId -> productsMap[productId] }
+
+                        orderDto.orderProducts = productDtos
+
+                        orderDto
+                    }
+            }
+    }
+
+    /**
      * Function: findAllOrdersByOwner
      * What does it do: The function returns all orders issued by a specific user
      * It also returns the data from each product in the list (ProductsDTOs)
@@ -89,7 +130,7 @@ class OrdersService (
                     .flatMap { it.orderProducts }
                     .toSet()
 
-                // Look for entities
+                // Look for Product entities
                 productsRepository.findListOfProducts(allProductsIds)
                     .onItem().transform { productsList: List<ProductsEntity> ->
                         // Create a map
@@ -182,6 +223,41 @@ class OrdersService (
                             orderDto
                         }
                     }
+            }
+    }
+
+    /**
+     * Function: updateOneOrder
+     * What does it do: It updates an order based on its ID
+     */
+    fun updateOneOrder(dto: UpdateOrderDto): Uni<OrdersDto> {
+        // Check whether the order exists
+        return ordersRepository.findById(dto.id)
+            .onItem().transformToUni { existingOrder ->
+                // If the order is not found, throw an error
+                if(existingOrder == null){
+                    return@transformToUni Uni.createFrom().failure(
+                        ElementNotFoundException("Order with the ID $dto.id not found")
+                    )
+                }
+
+                ordersMapper.updateDataToEntity(existingOrder,dto)
+
+                return@transformToUni Uni.createFrom().item(ordersMapper.entityToDto(existingOrder))
+            }
+    }
+
+    /**
+     * Function: deleteOrder
+     * What does it do: It deletes an order based on its ID
+     */
+    fun deleteOrder(id: Long): Uni<Boolean> {
+        return ordersRepository.deleteById(id)
+            .onItem().transform { success ->
+                if(!success){
+                    throw ElementNotFoundException("Order with ID $id not found.")
+                }
+                true
             }
     }
 }

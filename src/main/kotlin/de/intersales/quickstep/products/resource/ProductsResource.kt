@@ -76,7 +76,7 @@ class ProductsResource (
     }
 
     /**
-     * Endpoint: Delete a user
+     * Endpoint: Delete a product
      * What does it do: This endpoint deletes an existing product based on a given ID
      */
     @DELETE
