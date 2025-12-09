@@ -50,7 +50,9 @@ class UsersResourceTest {
         deliveryAddress = "Main St 123"
     )
 
-    // Test @GET /list
+    // ─────────────────────────────────────────────
+    // @GET /list
+    // ─────────────────────────────────────────────
     @Test
     fun `showAllUsers should return 200 OK with a list of users`() {
         // Mock service to return a list of DTOs
@@ -66,7 +68,9 @@ class UsersResourceTest {
             .body("[0].id", `is`(USER_ID.toInt()))
     }
 
-    // Test @GET /show/{id}
+    // ─────────────────────────────────────────────
+    // @GET /show/{id}
+    // ─────────────────────────────────────────────
     @Test
     fun `showSpecificUser should return 200 OK when user is found`() {
         // Mock service to return the user DTO
@@ -93,7 +97,9 @@ class UsersResourceTest {
             .statusCode(Response.Status.NOT_FOUND.statusCode)
     }
 
-    // Test @POST /add
+    // ─────────────────────────────────────────────
+    // @POST /add
+    // ─────────────────────────────────────────────
     @Test
     fun `addNewUser should return 201 CREATED when user is successfully added`() {
         // Mock service to return a newly created DTO with an ID
@@ -126,7 +132,9 @@ class UsersResourceTest {
             .statusCode(Response.Status.BAD_REQUEST.statusCode)
     }
 
-    // Test @PUT /edit
+    // ─────────────────────────────────────────────
+    // @PUT /edit
+    // ─────────────────────────────────────────────
     @Test
     fun `updateExistingUser should return 200 OK when user is updated`() {
         // Mock the service to return the updated DTO
@@ -143,7 +151,9 @@ class UsersResourceTest {
             .body("firstName", `is`("Updated"))
     }
 
-    // Test @DELETE /delete/{id}
+    // ─────────────────────────────────────────────
+    // @DELETE /delete/{id}
+    // ─────────────────────────────────────────────
     @Test
     fun `deleteExistingUser should return 204 NO CONTENT on successful deletion`() {
         // Mock the service to complete successfully (return void/Unit)
