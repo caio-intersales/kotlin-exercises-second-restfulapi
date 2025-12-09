@@ -23,73 +23,52 @@ class OrdersRepository : PanacheRepository<OrdersEntity> {
 
     /**
      * Function: findByDates
-     * What does it do: Allows for searching orders that were created between two dates
+     * What does it do: Allows for searching orders that were created between two dates, optionally filtering by Owner.
      */
-    fun findByDates(startDate: OffsetDateTime?, endDate: OffsetDateTime?): Uni<List<OrdersEntity>> {
+    fun findByDates(orderOwner: Long?, startDate: OffsetDateTime?, endDate: OffsetDateTime?): Uni<List<OrdersEntity>> {
 
-        // Check for invalidity
+        // 1. Check for invalid date range
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             // If the start date is after the end date, return an empty list immediately
             return Uni.createFrom().item(emptyList())
         }
 
-        // Dynamic query
+        // 2. Initialize Dynamic Query and Parameters
         var query = ""
         val parameters = Parameters()
 
-        if(startDate != null){
+        // 3. Conditionally filter by Owner ID
+        if (orderOwner != null) {
+            query += "order_owner = :owner"
+            parameters.and("owner", orderOwner)
+        }
+
+        // 4. Conditionally filter by Start Date
+        if (startDate != null) {
+            if (query.isNotEmpty()) {
+                query += " and "
+            }
             query += "issue_date >= :startDate"
             parameters.and("startDate", startDate)
         }
 
-        if(endDate != null){
-            if(query.isNotEmpty()){
+        // 5. Conditionally filter by End Date
+        if (endDate != null) {
+            if (query.isNotEmpty()) {
                 query += " and "
             }
             query += "issue_date <= :endDate"
             parameters.and("endDate", endDate)
         }
 
-        // Execute query
-        return if (query.isEmpty()){
-            // if both dates are empty, return all
+        // 6. Execute Query
+        return if (query.isEmpty()) {
+            // If no criteria (owner, start date, or end date) are provided, return all
             findAll().list()
-        }else{
-            // One or both were passed
+        } else {
+            // Execute query with one or more passed criteria
             find(query, parameters).list()
         }
-    }
-
-    /**
-     * Function: findByDatesAndOwner
-     * What does it do: Allows for searching orders that were created between two dates and belong to one owner
-     */
-    fun findByDatesAndOwner(orderOwner: Long, startDate: OffsetDateTime?, endDate: OffsetDateTime?): Uni<List<OrdersEntity>> {
-
-        // Check for invalidity
-        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-            // If the start date is after the end date, return an empty list immediately
-            return Uni.createFrom().item(emptyList())
-        }
-
-        // Dynamic query
-        var query = "order_owner = :owner"
-        val parameters = Parameters.with("owner", orderOwner)
-
-        if(startDate != null){
-            query += " AND issue_date >= :startDate"
-            parameters.and("startDate", startDate)
-        }
-
-        if(endDate != null){
-            if(query.isNotEmpty()){
-                query += " and "
-            }
-            query += " AND issue_date <= :endDate"
-            parameters.and("endDate", endDate)
-        }
-
-        return find(query, parameters).list()
     }
 
     /**

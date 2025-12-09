@@ -3,11 +3,13 @@ package de.intersales.quickstep.orders.resource
 import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
+import de.intersales.quickstep.orders.dto.ReceiveDatesDto
 import de.intersales.quickstep.orders.dto.UpdateOrderDto
 import de.intersales.quickstep.orders.service.OrdersService
 import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional
 import io.smallrye.mutiny.Uni
 import java.net.URI
+import java.time.OffsetDateTime
 import javax.validation.Valid
 import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
@@ -44,6 +46,26 @@ class OrdersResource (
     @Path("/show/{id}")
     fun showSpecificOrder(@PathParam("id") id: Long): Uni<OrdersDto> {
         return ordersService.findOneOrder(id)
+    }
+
+    /**
+     * Endpoint: Read orders based on time range
+     * What does it do: This endpoint returns orders made either before, after, or between given dates
+     */
+    @POST
+    @Path("/show/time_range")
+    fun showTimeRange(dto: ReceiveDatesDto): Uni<List<OrdersDto>>{
+        return ordersService.findOrdersByDate(dto, null)
+    }
+
+    /**
+     * Endpoint: Read orders based on time range and a specific owner
+     * What does it do: This endpoint returns orders made either before, after, or between given dates by a specific user
+     */
+    @POST
+    @Path("/show/{id}/time_range")
+    fun showTimeRangeByOwner(dto: ReceiveDatesDto, @PathParam("id") id: Long): Uni<List<OrdersDto>>{
+        return ordersService.findOrdersByDate(dto, id)
     }
 
     /**

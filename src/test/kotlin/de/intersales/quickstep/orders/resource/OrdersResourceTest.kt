@@ -3,6 +3,7 @@ package de.intersales.quickstep.orders.resource
 import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
+import de.intersales.quickstep.orders.dto.ReceiveDatesDto
 import de.intersales.quickstep.orders.dto.UpdateOrderDto
 import de.intersales.quickstep.orders.service.OrdersService
 import de.intersales.quickstep.users.dto.UsersDto
@@ -125,5 +126,54 @@ class OrdersResourceTest {
 
         assertEquals(Response.Status.NOT_FOUND.statusCode, response.status)
         verify(ordersService).deleteOrder(1L)
+    }
+
+    // ─────────────────────────────────────────────
+    // @POST /show/time_range
+    // ─────────────────────────────────────────────
+
+    @Test
+    fun `showTimeRange should call service with date DTO and null owner`() {
+        // Arrange
+        val startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z")
+        val endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z")
+        val datesDto = ReceiveDatesDto(startDate, endDate)
+        val expectedResult = listOf(OrdersDto(1L, mockOwnerDto, emptyList(), OffsetDateTime.now()))
+
+        // The service is expected to be called with the DTO and null for owner
+        `when`(ordersService.findOrdersByDate(datesDto, null)).thenReturn(Uni.createFrom().item(expectedResult))
+
+        // Act
+        val resultUni = ordersResource.showTimeRange(datesDto)
+
+        // Assert
+        val resultList = resultUni.await().indefinitely()
+        assertEquals(expectedResult, resultList)
+        verify(ordersService).findOrdersByDate(datesDto, null)
+    }
+
+    // ─────────────────────────────────────────────
+    // @POST /show/{id}/time_range
+    // ─────────────────────────────────────────────
+
+    @Test
+    fun `showTimeRangeByOwner should call service with date DTO and specific owner ID`() {
+        // Arrange
+        val ownerId = 5L
+        val startDate = OffsetDateTime.parse("2025-06-01T00:00:00Z")
+        val endDate = OffsetDateTime.parse("2025-06-30T23:59:59Z")
+        val datesDto = ReceiveDatesDto(startDate, endDate)
+        val expectedResult = listOf(OrdersDto(10L, mockOwnerDto, emptyList(), OffsetDateTime.now()))
+
+        // The service is expected to be called with the DTO and the specific owner ID
+        `when`(ordersService.findOrdersByDate(datesDto, ownerId)).thenReturn(Uni.createFrom().item(expectedResult))
+
+        // Act
+        val resultUni = ordersResource.showTimeRangeByOwner(datesDto, ownerId)
+
+        // Assert
+        val resultList = resultUni.await().indefinitely()
+        assertEquals(expectedResult, resultList)
+        verify(ordersService).findOrdersByDate(datesDto, ownerId)
     }
 }

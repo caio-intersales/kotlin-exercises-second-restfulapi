@@ -3,6 +3,7 @@ package de.intersales.quickstep.orders.service
 import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
+import de.intersales.quickstep.orders.dto.ReceiveDatesDto
 import de.intersales.quickstep.orders.dto.UpdateOrderDto
 import de.intersales.quickstep.orders.entity.OrdersEntity
 import de.intersales.quickstep.orders.mapper.OrdersMapper
@@ -380,12 +381,14 @@ class OrdersServiceTest {
     }
 
     @Test
-    fun `findOrdersByDate should delegate to repository and enrich results`() {
+    fun `findOrdersByDate should delegate to repository and enrich results (Date Only)`() {
         // Arrange
         val ownerId = 1L
         val startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z")
         val endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z")
         val product1Id = 101L
+        val datesDto = ReceiveDatesDto(startDate, endDate)
+        val ownerFilter: Long? = null // Testing the date-only path (all owners)
 
         // Entities
         val order1 = mockOrdersEntity(id = 1L, owner = ownerId, productIds = listOf(product1Id))
@@ -399,7 +402,8 @@ class OrdersServiceTest {
         val expectedDto = orderDtoBase.copy(orderProducts = listOf(productDto1), orderOwner = mockOwnerDto)
 
         // Setup Mocking
-        mockWhen(ordersRepository.findByDates(startDate, endDate)).thenReturn(Uni.createFrom().item(entityList))
+        // Service calls repository with (ownerFilter, startDate, endDate)
+        mockWhen(ordersRepository.findByDates(ownerFilter, startDate, endDate)).thenReturn(Uni.createFrom().item(entityList))
         mockWhen(productsRepository.findListOfProducts(setOf(product1Id))).thenReturn(Uni.createFrom().item(listOf(productEntity1)))
         mockWhen(usersRepository.findListOfUsers(setOf(ownerId))).thenReturn(Uni.createFrom().item(listOf(ownerEntity1)))
 
@@ -408,50 +412,56 @@ class OrdersServiceTest {
         mockWhen(usersMapper.entityToDto(ownerEntity1)).thenReturn(mockOwnerDto)
 
         // Act
-        val resultUni = ordersService.findOrdersByDate(startDate, endDate)
+        val resultUni = ordersService.findOrdersByDate(datesDto, ownerFilter)
 
         // Assert
         val resultList = resultUni.await().indefinitely()
         assertEquals(listOf(expectedDto), resultList)
-        verify(ordersRepository).findByDates(startDate, endDate)
+        verify(ordersRepository).findByDates(ownerFilter, startDate, endDate)
         verify(usersRepository).findListOfUsers(setOf(ownerId))
     }
 
     @Test
-    fun `findOrdersByDateAndOwner should delegate to repository and enrich results`() {
+    fun `findOrdersByDate should delegate to repository and enrich results (Date and Owner)`() {
         // Arrange
-        val ownerId = 1L
+        val ownerId = 2L // Use a different owner to ensure isolation
         val startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z")
         val endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z")
-        val product1Id = 101L
+        val product1Id = 102L
+        val datesDto = ReceiveDatesDto(startDate, endDate)
+        val ownerFilter: Long = ownerId // Specify owner filter
 
         // Entities
-        val order1 = mockOrdersEntity(id = 1L, owner = ownerId, productIds = listOf(product1Id))
+        val order1 = mockOrdersEntity(id = 2L, owner = ownerId, productIds = listOf(product1Id))
         val entityList = listOf(order1)
-        val productEntity1 = mockProductsEntity(product1Id, "Product A")
+        val productEntity1 = mockProductsEntity(product1Id, "Product B")
         val ownerEntity1 = mockUsersEntity(ownerId)
 
         // DTOs
-        val productDto1 = mockProductsDto(product1Id, "Product A")
-        val orderDtoBase = mockOrdersDto(id = 1L, owner = null, productDtos = emptyList())
-        val expectedDto = orderDtoBase.copy(orderProducts = listOf(productDto1), orderOwner = mockOwnerDto)
+        val productDto1 = mockProductsDto(product1Id, "Product B")
+        val orderDtoBase = mockOrdersDto(id = 2L, owner = null, productDtos = emptyList())
+        val expectedDto = orderDtoBase.copy(orderProducts = listOf(productDto1), orderOwner = mockOwnerDto2) // Using mockOwnerDto2 for ID 2
 
-        // Setup Mocking for the new method
-        mockWhen(ordersRepository.findByDatesAndOwner(ownerId, startDate, endDate)).thenReturn(Uni.createFrom().item(entityList))
+        // Setup Mocking
+        // Service calls repository with (ownerFilter, startDate, endDate)
+        mockWhen(ordersRepository.findByDates(ownerFilter, startDate, endDate)).thenReturn(Uni.createFrom().item(entityList))
         mockWhen(productsRepository.findListOfProducts(setOf(product1Id))).thenReturn(Uni.createFrom().item(listOf(productEntity1)))
         mockWhen(usersRepository.findListOfUsers(setOf(ownerId))).thenReturn(Uni.createFrom().item(listOf(ownerEntity1)))
 
         mockWhen(ordersMapper.entityToDto(order1)).thenReturn(orderDtoBase)
         mockWhen(productsMapper.entityToDto(productEntity1)).thenReturn(productDto1)
-        mockWhen(usersMapper.entityToDto(ownerEntity1)).thenReturn(mockOwnerDto)
+        mockWhen(usersMapper.entityToDto(ownerEntity1)).thenReturn(mockOwnerDto2) // Map owner entity to correct DTO
 
         // Act
-        val resultUni = ordersService.findOrdersByDateAndOwner(ownerId, startDate, endDate)
+        val resultUni = ordersService.findOrdersByDate(datesDto, ownerFilter)
 
         // Assert
         val resultList = resultUni.await().indefinitely()
         assertEquals(listOf(expectedDto), resultList)
-        verify(ordersRepository).findByDatesAndOwner(ownerId, startDate, endDate)
+        // Verify that the repository was called with the owner ID
+        verify(ordersRepository).findByDates(ownerFilter, startDate, endDate)
+        // Verify enrichment process used the correct owner ID
         verify(usersRepository).findListOfUsers(setOf(ownerId))
     }
+
 }
