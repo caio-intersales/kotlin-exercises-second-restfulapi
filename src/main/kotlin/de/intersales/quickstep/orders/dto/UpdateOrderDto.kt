@@ -8,6 +8,6 @@ import de.intersales.quickstep.users.dto.UsersDto
 
 data class UpdateOrderDto (
     val id: Long,
-    val orderOwner: Long?,
+    val orderOwner: Long,
     val orderProducts: List<Long>
 )

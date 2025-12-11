@@ -24,6 +24,7 @@ class OrdersMapper {
      * Convert update DTO to Entity data
      */
     fun updateDataToEntity(existingEntity: OrdersEntity, dto: UpdateOrderDto) {
+        existingEntity.orderOwner = dto.orderOwner
         existingEntity.setOrderProducts(dto.orderProducts)
     }
 
