@@ -47,5 +47,6 @@ class ProductsRepositoryTest {
             }
             .await().indefinitely()
 
+        cleanDb() // Added because BeforeEach doesn't run as there is just this one test
     }
 }
