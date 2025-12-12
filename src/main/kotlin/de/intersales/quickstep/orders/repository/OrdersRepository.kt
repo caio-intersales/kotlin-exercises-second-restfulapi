@@ -27,7 +27,11 @@ class OrdersRepository : PanacheRepository<OrdersEntity> {
      * Function: findByDates
      * What does it do: Allows for searching orders that were created between two dates, optionally filtering by Owner.
      */
-    fun findByDates(orderOwner: Long?, startDateStr: String?, endDateStr: String?): Uni<List<OrdersEntity>> {
+    fun findByDates(orderOwner: Long?, startDateStrSent: String?, endDateStrSent: String?): Uni<List<OrdersEntity>> {
+
+        // If empty values are sent for dates, treat it as null
+        val startDateStr: String? = startDateStrSent?.takeIf { it.isNotEmpty() }
+        val endDateStr: String? = endDateStrSent?.takeIf { it.isNotEmpty() }
 
         // 0. Convert dates
         val localStartDate: LocalDate? = startDateStr?.let { LocalDate.parse(it) }
