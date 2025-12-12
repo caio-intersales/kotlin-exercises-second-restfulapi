@@ -5,7 +5,9 @@ import io.quarkus.hibernate.reactive.panache.PanacheRepository
 import io.quarkus.panache.common.Parameters
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
+import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
@@ -25,7 +27,17 @@ class OrdersRepository : PanacheRepository<OrdersEntity> {
      * Function: findByDates
      * What does it do: Allows for searching orders that were created between two dates, optionally filtering by Owner.
      */
-    fun findByDates(orderOwner: Long?, startDate: OffsetDateTime?, endDate: OffsetDateTime?): Uni<List<OrdersEntity>> {
+    fun findByDates(orderOwner: Long?, startDateStr: String?, endDateStr: String?): Uni<List<OrdersEntity>> {
+
+        // 0. Convert dates
+        val localStartDate: LocalDate? = startDateStr?.let { LocalDate.parse(it) }
+        val localEndDate: LocalDate? = endDateStr?.let { LocalDate.parse(it) }
+
+        // Uses 00:00:00 for Start date
+        val startDate: OffsetDateTime? = localStartDate?.atStartOfDay(ZoneOffset.UTC)?.toOffsetDateTime()
+
+        // Uses 23:59:59 for the End date
+        val endDate: OffsetDateTime? = localEndDate?.atTime(23, 59, 59, 999999999)?.atOffset(ZoneOffset.UTC)
 
         // 1. Check for invalid date range
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {

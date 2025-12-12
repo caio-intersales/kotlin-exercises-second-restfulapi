@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
@@ -22,10 +23,30 @@ class OrdersRepositoryTest {
     @Inject
     lateinit var repository: OrdersRepository
 
+
     // Define fixed dates for testing predictability
     private val datePast: OffsetDateTime = OffsetDateTime.now().minus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS)
     private val dateMiddle: OffsetDateTime = OffsetDateTime.now().minus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS)
     private val dateFuture: OffsetDateTime = OffsetDateTime.now().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS)
+
+    // Define the formatter to ensure the correct string output
+    private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    // New val for the updated ReceiveDatesDto which now receives Strings
+    private val datePastStr: String = OffsetDateTime.now()
+        .minus(5, ChronoUnit.DAYS)
+        .toLocalDate() // Convert to LocalDate to remove time component
+        .format(DATE_FORMATTER)
+
+    private val dateMiddleStr: String = OffsetDateTime.now()
+        .minus(3, ChronoUnit.DAYS)
+        .toLocalDate()
+        .format(DATE_FORMATTER)
+
+    private val dateFutureStr: String = OffsetDateTime.now()
+        .minus(1, ChronoUnit.DAYS)
+        .toLocalDate()
+        .format(DATE_FORMATTER)
 
     // Define Owner IDs
     private val OWNER_A = 10L
@@ -85,7 +106,7 @@ class OrdersRepositoryTest {
     @Test
     fun `findByDates should return the right amount of orders when given both start and end dates (All Owners)`() {
         // ACT: Look for orders between datePast and dateFuture for ALL owners (4 orders total)
-        val result = repository.findByDates(null, datePast, dateFuture)
+        val result = repository.findByDates(null, datePastStr, dateFutureStr)
             .await().indefinitely()
 
         // ASSERT: Should return all 4 orders (3 from A, 1 from B)
@@ -95,7 +116,7 @@ class OrdersRepositoryTest {
     @Test
     fun `findByDates should return the right amount of orders when given just start date (All Owners)`() {
         // ACT: Look for orders starting from dateMiddle onwards for ALL owners
-        val result = repository.findByDates(null, dateMiddle, null)
+        val result = repository.findByDates(null, dateMiddleStr, null)
             .await().indefinitely()
 
         // ASSERT: Should find 3 orders: A(Middle), A(Future), B(Middle)
@@ -116,7 +137,7 @@ class OrdersRepositoryTest {
     @Test
     fun `findByDates should return an empty list if the dates provided are invalid`() {
         // ACT: Look for orders where the Start Date (dateFuture) is after the End Date (datePast) for ALL owners
-        val result = repository.findByDates(null, dateFuture, datePast)
+        val result = repository.findByDates(null, dateFutureStr, datePastStr)
             .await().indefinitely()
 
         // ASSERT: Should return an empty list based on the check in the function
@@ -151,7 +172,7 @@ class OrdersRepositoryTest {
     @Test
     fun `findByDates should filter by date range and specific owner`() {
         // ACT: Look for orders between datePast and dateMiddle for OWNER_A
-        val result = repository.findByDates(OWNER_A, datePast, dateMiddle)
+        val result = repository.findByDates(OWNER_A, datePastStr, dateMiddleStr)
             .await().indefinitely()
 
         // ASSERT: Should find 2 orders: A(Past), A(Middle)
@@ -163,7 +184,7 @@ class OrdersRepositoryTest {
     @Test
     fun `findByDates should return one result for exact match (Owner B, dateMiddle)`() {
         // ACT: Look for the single order matching OWNER_B and dateMiddle
-        val result = repository.findByDates(OWNER_B, dateMiddle, dateMiddle)
+        val result = repository.findByDates(OWNER_B, dateMiddleStr, dateMiddleStr)
             .await().indefinitely()
 
         // ASSERT: Should return exactly 1 order
@@ -175,7 +196,7 @@ class OrdersRepositoryTest {
     @Test
     fun `findByDates should return empty list when date range excludes owner's orders`() {
         // ACT: Look for orders for OWNER_B (only has an order at dateMiddle) between datePast and datePast
-        val result = repository.findByDates(OWNER_B, datePast, datePast)
+        val result = repository.findByDates(OWNER_B, datePastStr, datePastStr)
             .await().indefinitely()
 
         // ASSERT: Should return empty list

@@ -384,8 +384,8 @@ class OrdersServiceTest {
     fun `findOrdersByDate should delegate to repository and enrich results (Date Only)`() {
         // Arrange
         val ownerId = 1L
-        val startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z")
-        val endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z")
+        val startDate = "2025-01-01"
+        val endDate = "2025-12-31"
         val product1Id = 101L
         val datesDto = ReceiveDatesDto(startDate, endDate)
         val ownerFilter: Long? = null // Testing the date-only path (all owners)
@@ -425,8 +425,8 @@ class OrdersServiceTest {
     fun `findOrdersByDate should delegate to repository and enrich results (Date and Owner)`() {
         // Arrange
         val ownerId = 2L // Use a different owner to ensure isolation
-        val startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z")
-        val endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z")
+        val startDate = "2025-01-01"
+        val endDate = "2025-12-31"
         val product1Id = 102L
         val datesDto = ReceiveDatesDto(startDate, endDate)
         val ownerFilter: Long = ownerId // Specify owner filter

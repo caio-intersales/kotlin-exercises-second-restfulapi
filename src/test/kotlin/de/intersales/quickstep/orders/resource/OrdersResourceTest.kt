@@ -135,8 +135,8 @@ class OrdersResourceTest {
     @Test
     fun `showTimeRange should call service with date DTO and null owner`() {
         // Arrange
-        val startDate = OffsetDateTime.parse("2025-01-01T00:00:00Z")
-        val endDate = OffsetDateTime.parse("2025-12-31T23:59:59Z")
+        val startDate = "2025-01-01"
+        val endDate = "2025-12-31"
         val datesDto = ReceiveDatesDto(startDate, endDate)
         val expectedResult = listOf(OrdersDto(1L, mockOwnerDto, emptyList(), OffsetDateTime.now()))
 
@@ -153,15 +153,15 @@ class OrdersResourceTest {
     }
 
     // ─────────────────────────────────────────────
-    // @POST /show/{id}/time_range
+    // @POST /show/owner/{id}
     // ─────────────────────────────────────────────
 
     @Test
     fun `showTimeRangeByOwner should call service with date DTO and specific owner ID`() {
         // Arrange
         val ownerId = 5L
-        val startDate = OffsetDateTime.parse("2025-06-01T00:00:00Z")
-        val endDate = OffsetDateTime.parse("2025-06-30T23:59:59Z")
+        val startDate = "2025-01-01"
+        val endDate = "2025-12-31"
         val datesDto = ReceiveDatesDto(startDate, endDate)
         val expectedResult = listOf(OrdersDto(10L, mockOwnerDto, emptyList(), OffsetDateTime.now()))
 

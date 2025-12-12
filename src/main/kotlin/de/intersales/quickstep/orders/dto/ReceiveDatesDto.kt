@@ -7,6 +7,6 @@ import java.time.OffsetDateTime
  */
 
 data class ReceiveDatesDto (
-    val startDate: OffsetDateTime? = null,
-    val endDate: OffsetDateTime? = null
+    val startDate: String? = null,
+    val endDate: String? = null
 )

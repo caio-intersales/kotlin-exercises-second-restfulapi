@@ -63,7 +63,7 @@ class OrdersResource (
      * What does it do: This endpoint returns orders made either before, after, or between given dates by a specific user
      */
     @POST
-    @Path("/show/{id}/time_range")
+    @Path("/show/owner/{id}")
     fun showTimeRangeByOwner(dto: ReceiveDatesDto, @PathParam("id") id: Long): Uni<List<OrdersDto>>{
         return ordersService.findOrdersByDate(dto, id)
     }
