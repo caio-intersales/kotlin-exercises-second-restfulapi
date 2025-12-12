@@ -35,4 +35,45 @@ class AddressesEntityTest {
         assertNull(entity.zip, "zip should be null.")
         assertNull(entity.country, "country should be null.")
     }
+
+    // Property access & assignment test
+    @Test
+    fun `properties should be correctly assigned and retrieved`() {
+        val entity = AddressesEntity()
+
+        // Set values
+        entity.id       = 1L
+        entity.street   = "Main St"
+        entity.houseNumber = "12"
+        entity.city     = "Springfield"
+        entity.state    = "NY"
+        entity.zip      = "5sa898"
+        entity.country  = "US"
+
+        // Check assigned values
+        assertEquals(1L, entity.id, "ID was not set correctly")
+        assertEquals("Main St", entity.street, "street was not set correctly")
+        assertEquals("12", entity.houseNumber, "houseNumber was not set correctly")
+        assertEquals("Springfield", entity.city, "city was not set correctly")
+        assertEquals("NY", entity.state, "state was not set correctly")
+        assertEquals("5sa898", entity.zip, "zip was not set correctly")
+        assertEquals("US", entity.country, "country was not set correctly")
+
+    }
+
+    // Identity test
+    @Test
+    fun `entity with the same non-null ID should be equal`() {
+        val entity1 = createFullEntity().apply {
+            id = 500L
+            street = "Main St"
+        }
+
+        val entity2 = createFullEntity().apply {
+            id = 500L
+            street = "Hauptstr."
+        }
+
+        assertEquals(entity1, entity2, "Entities with the same ID must be equal if overridden.")
+    }
 }
