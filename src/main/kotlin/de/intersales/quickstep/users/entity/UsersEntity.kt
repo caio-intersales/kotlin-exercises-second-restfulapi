@@ -1,11 +1,15 @@
 package de.intersales.quickstep.users.entity
 
+import de.intersales.quickstep.addresses.entity.AddressesEntity
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase
+import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType
 import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.OneToOne
 import javax.persistence.Table
 
 /**
@@ -51,6 +55,7 @@ class UsersEntity : PanacheEntityBase() {
     @Column(name = "password")
     var password: String?       = null
 
-    @Column(name = "deliveryaddress")
-    var deliveryAddress: String? = null
+    @OneToOne(cascade = [CascadeType.ALL])
+    @JoinColumn(name = "deliveryaddress")
+    var deliveryAddress: AddressesEntity? = null
 }

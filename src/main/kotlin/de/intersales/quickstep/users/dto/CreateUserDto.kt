@@ -1,5 +1,6 @@
 package de.intersales.quickstep.users.dto
 
+import de.intersales.quickstep.addresses.entity.AddressesEntity
 import javax.validation.constraints.Email
 import javax.validation.constraints.NotBlank
 import javax.validation.constraints.Size
@@ -29,5 +30,5 @@ data class CreateUserDto (
     val rawPassword: String,
 
     // Field for delivery address can be blank as it can be added later by the user
-    val deliveryAddress: String?
+    val deliveryAddress: AddressesEntity?
 )

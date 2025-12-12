@@ -1,5 +1,6 @@
 package de.intersales.quickstep.orders.resource
 
+import de.intersales.quickstep.addresses.entity.AddressesEntity
 import de.intersales.quickstep.exceptions.ElementNotFoundException
 import de.intersales.quickstep.orders.dto.CreateOrderDto
 import de.intersales.quickstep.orders.dto.OrdersDto
