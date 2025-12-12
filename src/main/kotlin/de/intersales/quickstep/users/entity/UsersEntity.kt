@@ -55,7 +55,11 @@ class UsersEntity : PanacheEntityBase() {
     @Column(name = "password")
     var password: String?       = null
 
-    @OneToOne(cascade = [CascadeType.ALL])
-    @JoinColumn(name = "deliveryaddress")
-    var deliveryAddress: AddressesEntity? = null
+    @Column(name = "deliveryaddress")
+    var deliveryAddress: String? = null
+
+    // To change afterwards, when the entity is ready
+//    @OneToOne(cascade = [CascadeType.ALL])
+//    @JoinColumn(name = "deliveryaddress")
+//    var deliveryAddress: AddressesEntity? = null
 }
