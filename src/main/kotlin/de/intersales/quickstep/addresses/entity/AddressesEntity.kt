@@ -38,7 +38,7 @@ class AddressesEntity : PanacheEntityBase() {
 //    @Column(name = "user")
 //    var user: UsersEntity? = null
     @Column(name = "user_id")
-    var user_id: Long? = null
+    var userId: Long? = null
 
     @Column(name = "street")
     var street: String? = null
