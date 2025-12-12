@@ -34,8 +34,11 @@ class AddressesEntity : PanacheEntityBase() {
     }
     // --- End of overrides
 
-    @OneToOne(mappedBy = "deliveryaddress")
-    var user: UsersEntity? = null
+    //@OneToOne(mappedBy = "deliveryaddress") // == Will have to be updated later
+//    @Column(name = "user")
+//    var user: UsersEntity? = null
+    @Column(name = "user_id")
+    var user_id: Long? = null
 
     @Column(name = "street")
     var street: String? = null
