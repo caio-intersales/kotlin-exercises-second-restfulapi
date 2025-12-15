@@ -48,7 +48,7 @@ class AddressesRepositoryTest {
     // !!! TO UPDATE: userId has to be UsersEntity after the integration
     private fun createAddress(userId: Long, givenCountry: String): AddressesEntity {
         val address = AddressesEntity()
-        address.user_id = userId
+        address.userId = userId
         address.country = givenCountry
         return address
     }
@@ -67,13 +67,7 @@ class AddressesRepositoryTest {
     // Test fun findByCountry
     @Test
     fun `findByCountry should return a list of addresses with a specific country code`() {
-
-        // Call the repository method
-        val multi: Multi<AddressesEntity?> = repository.findByCountry("US")
-
-        // Collect all elements into Uni<List<AddressesEntity?>>
-        val listUni: Uni<List<AddressesEntity?>> = multi.collect().asList()
-
+        val listUni: Uni<List<AddressesEntity>> = repository.findByCountry("US")
         // Block the Uni to get the final List result synchronously for the test
         val result: List<AddressesEntity?> = listUni.await().indefinitely()
 
